@@ -9,7 +9,7 @@ import sbtbuildinfo.Plugin._
 object ChcalcBuild extends Build {
 
   object Dependencies {
-    val scalazVersion = "7.1.1"
+    val scalazVersion = "7.1.4"
 
     val scalaz = "org.scalaz" %% "scalaz-core" % scalazVersion withSources () withJavadoc ()
 
