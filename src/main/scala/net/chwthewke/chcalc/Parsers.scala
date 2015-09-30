@@ -22,6 +22,8 @@ private class Parsers( val input : ParserInput ) extends Parser {
 
   def BigNumberAndSep = rule { SuffixedNumber ~ Sep | SciNumber ~ Sep }
 
+  def BigNumber = rule { SuffixedNumber ~ EOI | SciNumber ~ EOI }
+
   def SciNumber = rule { PosInteger ~ '.' ~ capture( PosInteger ) ~ 'e' ~ PosInteger ~> sci }
 
   def SuffixedNumber = rule { PosInteger ~ Suffix ~> ( ( n, s ) => n * s ) }
@@ -53,6 +55,9 @@ private class Parsers( val input : ParserInput ) extends Parser {
 object Parsers {
   def heroDef( s : String ) : Try[HeroDef] =
     new Parsers( s ).HeroDefRule.run()
+
+  def bigNumber( s : String ) : Try[BigInt] =
+    new Parsers( s ).BigNumber.run()
 
   private val MarkCodes : Map[String, Mark] = Map( "*" -> Knight )
 
