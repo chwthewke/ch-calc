@@ -9,7 +9,8 @@ case class HeroDef(
   cost : BigInt,
   damage : BigInt,
   marks : List[Mark],
-  upgrades : SortedMap[Int, Int] )
+  upgrades : SortedMap[Int, Int],
+  globalUpgrades : SortedMap[Int, Int] )
 
 sealed trait Mark
 case object Knight extends Mark

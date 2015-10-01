@@ -11,14 +11,18 @@ private class Parsers( val input : ParserInput ) extends Parser {
     Name ~ Sep ~
       BigNumberAndSep ~
       BigNumberAndSep ~
-      6.times( UpgradePercent ~ Sep ) ~
+      6.times( UpgradeAndSep ) ~
       Marks ~ EOI ~>
       hero
   }
 
   def Name = rule { capture( oneOrMore( noneOf( "|" ) ) ) }
 
-  def UpgradePercent = rule { capture( oneOrMore( CharPredicate.Digit | "." ) ) ~> toUpgradePercent }
+  def UpgradeAndSep = rule { GlobalUpgradePercent ~ Sep | LocalUpgradeFactor ~ Sep }
+
+  def GlobalUpgradePercent = rule { "(" ~ PosInteger ~ ")" ~> toGlobalUpgrade }
+
+  def LocalUpgradeFactor = rule { capture( oneOrMore( CharPredicate.Digit | "." ) ) ~> toLocalUpgrade }
 
   def BigNumberAndSep = rule { SuffixedNumber ~ Sep | SciNumber ~ Sep }
 
@@ -34,13 +38,24 @@ private class Parsers( val input : ParserInput ) extends Parser {
 
   def Marks = rule { zeroOrMore( MarkCodes ) ~> ( _.toList ) }
 
-  private def hero : ( String, BigInt, BigInt, Seq[Int], List[Mark] ) => HeroDef =
+  private def hero : ( String, BigInt, BigInt, Seq[Upgrade], List[Mark] ) => HeroDef =
     ( n, c, d, u, m ) => {
-      val upgrades = SortedMap( upgradeLevels.zip( u.toList ) : _* )
-      HeroDef( n, c, d, m, upgrades )
+      HeroDef( n, c, d, m, localUpgrades( u ), globalUpgrades( u ) )
     }
 
-  private val toUpgradePercent : String => Int = s => ( s.toDouble * 100 ).toInt
+  private def localUpgrades( ups : Seq[Upgrade] ) : SortedMap[Int, Int] =
+    SortedMap( UpgradeLevels.zip( ups ).collect {
+      case ( l, LocalUpgrade( v ) ) if v != 100 => l -> v
+    } : _* )
+
+  private def globalUpgrades( ups : Seq[Upgrade] ) : SortedMap[Int, Int] = {
+    SortedMap( UpgradeLevels.zip( ups ).collect {
+      case ( l, GlobalUpgrade( v ) ) => l -> v
+    } : _* )
+  }
+
+  private val toLocalUpgrade : String => LocalUpgrade = s => LocalUpgrade( ( s.toDouble * 100 ).toInt )
+  private val toGlobalUpgrade : Int => GlobalUpgrade = s => GlobalUpgrade( s + 100 )
 
   private val sci : ( Int, Int, String, Int ) => BigInt = ( i, f, fs, e ) => {
     val d = fs.length
@@ -66,5 +81,9 @@ object Parsers {
   private val SuffixMap : Map[String, Int] =
     Suffixes.zipWithIndex.map { case ( s, i ) => s -> ( i + 1 ) * 3 }.toMap
 
-  private val upgradeLevels : List[Int] = List( 10, 25, 50, 75, 100, 125 )
+  private val UpgradeLevels : List[Int] = List( 10, 25, 50, 75, 100, 125 )
+
+  sealed trait Upgrade
+  case class LocalUpgrade( val value : Int ) extends Upgrade
+  case class GlobalUpgrade( val value : Int ) extends Upgrade
 }
